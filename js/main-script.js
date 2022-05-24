@@ -9,31 +9,38 @@ const id3Cube = "3D-cube";
 const id3Sphere = "3D-sphere";
 const id3Plane = "3D-plane";
 const id3Text = "3D-text";
-
-const idBack = "set-background";
-const idSound = "set-music";
+const DEFAULT_ADD_ID_NAME = "Object";
 
 let scene;
 let camera;
 let renderer;
 let container;
 
-let object3Dgui; // класс свойств 3D обьекта
-let gui = null; // отображение изменения своиств
+let object3Dgui;
+let gui = null;
 
-let controls; // для перемещения по сцене
-let loaderGLTF; // загрузка 3D моделей
+let controls;
+let loaderGLTF;
 let loaderText;
 let loaderTextures;
 let audioListener;
 let audioLoader;
+let sound;
 
 let raycaster;
 let clickMouse;
 
 let sceneObjects = new Array(100);
-let sceneCounter = 0;
+let sceneCounter = 1;
+let deleteObjects = 0;
+let namesObjects = new Array(100);
+namesObjects[1] = null;
+let idObjectName;
+
 let lastPickObject = null;
+let temp;
+let target = false;
+let node;
 
 function init() {
     initScene();
@@ -41,8 +48,11 @@ function init() {
     initRender();
     initOrbitControls();
     initLoaders();
+    initAddButtonListeners();
+    initAddInputListenerScene();
 
     object3Dgui = {
+        name: "",
         rotationX: 0,
         rotationY: 0,
         rotationZ: 0,
@@ -51,52 +61,12 @@ function init() {
         positionZ: 0,
         scaleX: 1,
         scaleY: 1,
-        scaleZ: 1
+        scaleZ: 1,
+        color: "",
+        intensity: 1,
+        distance: 100
     };
 
-    // let romeAbak;
-    // loaderGLTF.load('../resources/RomeAbak/RomeAbak.gltf', gltf => {
-    //         romeAbak = gltf.scene;
-    //         scene.add(romeAbak);
-    //
-    //         sceneObjects[sceneCounter] = romeAbak.children[0];
-    //         sceneCounter++;
-    //         console.log(sceneObjects);
-    //     },
-    //     function (error) {
-    //         console.log('Error: ' + error)
-    //     }
-    // );
-
-
-//Обработка кнопок, добавление событий на кнопки
-    let elements = document.querySelectorAll('.add-button');
-//перебираем все найденные элементы и вешаем на них события
-    [].forEach.call(elements, function (el) {
-        //вешаем событие
-        el.onclick = function (e) {
-            if (el.id === idPointLight) {
-                addPointLight();
-            } else if (el.id === idAmbientLight) {
-                addAmbientLight();
-            } else if (el.id === idSpotLight) {
-                addSpotLight();
-            } else if (el.id === id3Model) {
-                add3DModel();
-            } else if (el.id === id3Cube) {
-                add3DCube();
-            } else if (el.id === id3Sphere) {
-                add3DSphere();
-            } else if (el.id === id3Plane) {
-                add3DPlane();
-            } else if (el.id === id3Text) {
-                //document.getElementsByTagName("input")[1].value
-                add3DText();
-            }
-        }
-    });
-
-    //EventListeners
     window.addEventListener('resize', onWindowResize, false);
     window.addEventListener('click', event => {
         event.preventDefault();
@@ -104,54 +74,19 @@ function init() {
         clickMouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
     });
 
-    function setOpacity(newObject) {
-        lastPickObject = newObject;
-        lastPickObject.material.transparent = true;
-        lastPickObject.material.opacity = 0.5;
-    }
-
-    function backOpacity() {
-        lastPickObject.material.opacity = 1.0;
-    }
-
     function onClickRaycaster() {
         raycaster.setFromCamera(clickMouse, camera);
 
         const found = raycaster.intersectObjects(scene.children, true);
-        if (found.length > 0) { //Если кликнули не в пустоту
-            if (lastPickObject == null) {
-                setOpacity(found[0].object);
-            } else {
-                if (found[0].object !== lastPickObject) {
-                    backOpacity();
-                    setOpacity(found[0].object);
+        if (found.length > 0) {
+            removeTemp();
+            if (found[0].object.name !== 'temp') {
+                if (lastPickObject !== found[0].object) {
+                    closeChangeGUI();
                 }
+                lastPickObject = found[0].object;
+                openChangeGUI();
             }
-            if (gui == null) {
-                gui = new dat.GUI();
-                if (lastPickObject.type === 'Mesh') {
-                    gui.add(object3Dgui, 'rotationX').min(-4).max(4).step(0.001);
-                    gui.add(object3Dgui, 'rotationY').min(-4).max(4).step(0.001);
-                    gui.add(object3Dgui, 'rotationZ').min(-4).max(4).step(0.001);
-                    gui.add(object3Dgui, 'positionX').min(-20).max(20).step(0.001);
-                    gui.add(object3Dgui, 'positionY').min(-20).max(20).step(0.001);
-                    gui.add(object3Dgui, 'positionZ').min(-20).max(20).step(0.001);
-                    gui.add(object3Dgui, 'scaleX').min(0.1).max(4.0).step(0.001);
-                    gui.add(object3Dgui, 'scaleY').min(0.1).max(4.0).step(0.001);
-                    gui.add(object3Dgui, 'scaleZ').min(0.1).max(4.0).step(0.001);
-                }
-            }
-            console.log(found[0].object);
-            // if (found[0].object.userData.name == "RomeAbak")
-        } else { //если кликнули в пустоту, то снять выделение со всех обьектов
-            if (lastPickObject != null) {
-                backOpacity()
-            }
-            if (gui != null) {
-                gui.destroy();
-                gui = null;
-            }
-            console.log(found[0]);
         }
     }
 
@@ -161,13 +96,44 @@ function init() {
         renderer.setSize(window.innerWidth, window.innerHeight);
     }
 
-    //UpdateFrame
     function animate() {
         requestAnimationFrame(animate);
-        // romeAbak.position.set(object3Dgui.positionX, object3Dgui.positionY, object3Dgui.positionZ);
-        // romeAbak.rotation.set(object3Dgui.rotationX, object3Dgui.rotationY, object3Dgui.rotationZ);
-        // romeAbak.scale.set(object3Dgui.scaleX, object3Dgui.scaleY, object3Dgui.scaleZ);
+        if (lastPickObject !== null && gui !== null) {
 
+            if ("positionX" in object3Dgui && "positionY" in object3Dgui && "positionZ" in object3Dgui) {
+                lastPickObject.position.set(object3Dgui.positionX, object3Dgui.positionY, object3Dgui.positionZ)
+            }
+            if ("rotationX" in object3Dgui && "rotationY" in object3Dgui && "rotationZ" in object3Dgui) {
+                lastPickObject.rotation.set(object3Dgui.rotationX, object3Dgui.rotationY, object3Dgui.rotationZ);
+            }
+            if ("scaleX" in object3Dgui && "scaleY" in object3Dgui && "scaleZ" in object3Dgui) {
+                lastPickObject.scale.set(object3Dgui.scaleX, object3Dgui.scaleY, object3Dgui.scaleZ);
+            }
+            if ("color" in object3Dgui) {
+                if (lastPickObject.type === "Mesh") {
+                    console.log(lastPickObject);
+                    if (lastPickObject.geometry.type === "TextGeometry") {
+                        lastPickObject.material[0].color.set(object3Dgui.color);
+                        lastPickObject.material[1].color.set("#111");
+
+                    } else if (lastPickObject.geometry.type === "SphereGeometry" || lastPickObject.geometry.type === "BoxGeometry" || lastPickObject.geometry.type === "PlaneGeometry") {
+                        lastPickObject.material.color.set(object3Dgui.color);
+                    }
+                } else {
+                    lastPickObject.color.set(object3Dgui.color);
+                }
+            }
+            if ("intensity" in object3Dgui) {
+                lastPickObject.intensity = object3Dgui.intensity;
+            }
+            if ("distance" in object3Dgui) {
+                lastPickObject.distance = object3Dgui.distance;
+            }
+            if ("name" in object3Dgui) {
+                changeName();
+            }
+
+        }
         onClickRaycaster();
         controls.update();
         renderer.render(scene, camera);
@@ -176,36 +142,104 @@ function init() {
     animate();
 }
 
-//Функции добавления
+function closeChangeGUI() {
+    if (gui != null) {
+        gui.destroy();
+        gui = null;
+    }
+}
+
+function changeName() {
+    document.getElementById(lastPickObject.name + "H").innerHTML = object3Dgui.name;
+}
+
+function openChangeGUI() {
+    if (gui === null) {
+        gui = new dat.GUI();
+
+        object3Dgui.name = document.getElementById(lastPickObject.name + "H").innerHTML;
+        object3Dgui.positionX = lastPickObject.position.x;
+        object3Dgui.positionY = lastPickObject.position.y;
+        object3Dgui.positionZ = lastPickObject.position.z;
+        object3Dgui.rotationX = lastPickObject.rotation.x;
+        object3Dgui.rotationY = lastPickObject.rotation.y;
+        object3Dgui.rotationZ = lastPickObject.rotation.z;
+
+        gui.add(object3Dgui, 'name');
+        gui.add(object3Dgui, 'positionX').min(-30).max(30).step(0.001);
+        gui.add(object3Dgui, 'positionY').min(-30).max(30).step(0.001);
+        gui.add(object3Dgui, 'positionZ').min(-30).max(30).step(0.001);
+        gui.add(object3Dgui, 'rotationX').min(-4).max(4).step(0.001);
+        gui.add(object3Dgui, 'rotationY').min(-4).max(4).step(0.001);
+        gui.add(object3Dgui, 'rotationZ').min(-4).max(4).step(0.001);
+        addAttributesLastPickObject();
+
+    }
+}
+
+function addScaleGUI() {
+    object3Dgui.scaleX = lastPickObject.scale.x;
+    object3Dgui.scaleY = lastPickObject.scale.y;
+    object3Dgui.scaleZ = lastPickObject.scale.z;
+    gui.add(object3Dgui, 'scaleX').min(0.1).max(10.0).step(0.001);
+    gui.add(object3Dgui, 'scaleY').min(0.1).max(10.0).step(0.001);
+    gui.add(object3Dgui, 'scaleZ').min(0.1).max(10.0).step(0.001);
+}
+
+function addAttributesLastPickObject() {
+    if (lastPickObject.type === "PointLight") {
+        object3Dgui.color = "#" + lastPickObject.color.getHexString();
+        object3Dgui.intensity = lastPickObject.intensity;
+        object3Dgui.distance = lastPickObject.distance;
+        gui.add(object3Dgui, 'color');
+        gui.add(object3Dgui, 'intensity').min(1).max(10).step(1);
+        gui.add(object3Dgui, 'distance').min(1).max(300).step(1);
+    } else if (lastPickObject.type === "AmbientLight" || lastPickObject.type === "SpotLight" || lastPickObject.type === "PointLight") {
+        object3Dgui.color = "#" + lastPickObject.color.getHexString();
+        gui.add(object3Dgui, 'color');
+    } else if (lastPickObject.geometry.type === "BufferGeometry") {
+        addScaleGUI();
+    } else if (lastPickObject.geometry.type === "TextGeometry") {
+        object3Dgui.color = "#" + lastPickObject.material[0].color.getHexString();
+        gui.add(object3Dgui, 'color');
+        addScaleGUI();
+    } else if (lastPickObject.geometry.type === "SphereGeometry" || lastPickObject.geometry.type === "BoxGeometry" || lastPickObject.geometry.type === "PlaneGeometry") {
+        object3Dgui.color = "#" + lastPickObject.material.color.getHexString();
+        gui.add(object3Dgui, 'color');
+        addScaleGUI();
+    }
+}
+
 function addPointLight() {
     let pointLight = new THREE.PointLight(0x2fa1d6, 1, 100);
     pointLight.position.set(0, 1, 0);
-    pointLight.name = 'PointLight';
+    preCreate();
+    pointLight.name = idObjectName;
     pointLight.castShadow = true;
     pointLight.shadow.mapSize.width = 4096;
     pointLight.shadow.mapSize.height = 4096;
 
     sceneObjects[sceneCounter] = pointLight;
-    sceneCounter++;
-    console.log(sceneObjects);
     scene.add(pointLight);
+    createLi();
 }
 
 function addAmbientLight() {
     let ambientLight = new THREE.AmbientLight(0xffffff);
     ambientLight.position.set(10, 10, 10);
-    ambientLight.name = 'AmbientLight';
+    preCreate();
+    ambientLight.name = idObjectName;
 
     sceneObjects[sceneCounter] = ambientLight;
-    sceneCounter++;
-    console.log(sceneObjects);
     scene.add(ambientLight);
+    createLi();
 }
 
 function addSpotLight() {
     let spotLight = new THREE.SpotLight(0xffffff);
     spotLight.position.set(3, 3, 3);
-    spotLight.name = 'SpotLight';
+    preCreate();
+    spotLight.name = idObjectName;
 
     spotLight.castShadow = true;
 
@@ -217,28 +251,41 @@ function addSpotLight() {
     spotLight.shadow.camera.fov = 30;
 
     sceneObjects[sceneCounter] = spotLight;
-    console.log(sceneObjects);
-    sceneCounter++;
     scene.add(spotLight);
+    createLi();
 }
 
 function add3DModel() {
-    console.log(pathGLTF);
+    let pathGLTF = prompt('Enter the path to the file .gltf', '../resources/RomeAbak/RomeAbak.gltf');
     let romeAbak1;
     loaderGLTF.load(pathGLTF, gltf => {
             romeAbak1 = gltf.scene;
             romeAbak1.position.set(0, 0, 0);
-            scene.add(romeAbak1);
-            romeAbak1.children[0].name = '3DModel'
-
+            preCreate();
+            romeAbak1.children[0].name = idObjectName;
+            romeAbak1.name = idObjectName;
             sceneObjects[sceneCounter] = romeAbak1.children[0];
-            sceneCounter++;
-            console.log(sceneObjects);
+            scene.add(romeAbak1);
+            createLi();
         },
         function (error) {
             console.log('Error: ' + error)
         }
     );
+}
+
+function addSelectMesh(targetObject, typeGeometry) {
+    let geometry;
+    if (typeGeometry === "SphereGeometry") {
+        geometry = new THREE.SphereGeometry(targetObject.radius);
+    } else if (typeGeometry === "BoxGeometry") {
+        geometry = new THREE.BoxGeometry(targetObject.width, targetObject.height);
+    } else if (typeGeometry === "PlaneGeometry") {
+        geometry = new THREE.PlaneGeometry(targetObject.width, targetObject.height);
+    }
+
+    let material = new THREE.MeshBasicMaterial({color: 0xffffff});
+    return new THREE.Mesh(geometry, material);
 }
 
 function addMesh(typeGeometry) {
@@ -248,42 +295,113 @@ function addMesh(typeGeometry) {
 
 }
 
+function updateDelete(numberObject) {
+    deleteObjects = 0;
+    for (let i = 1; i <= numberObject; i++) {
+        if (namesObjects[i] === null) {
+            deleteObjects++;
+        }
+    }
+}
+
+function preCreate() {
+    for (let i = 1; i <= sceneCounter; i++) {
+        if (namesObjects.indexOf(DEFAULT_ADD_ID_NAME + i) <= -1) {
+            idObjectName = DEFAULT_ADD_ID_NAME + i;
+            namesObjects[i] = idObjectName;
+            break;
+        }
+
+    }
+    if (deleteObjects === sceneCounter) {
+        deleteObjects = 0;
+    }
+
+}
+
+function createLi() {
+    let ul = document.getElementById("objects");
+    let li = document.createElement("li");
+
+    node = document.createElement("h5");
+    node.innerHTML = idObjectName;
+    node.id = idObjectName + "H";
+    li.appendChild(node);
+    li.setAttribute("id", idObjectName);
+    li.className = 'object-point';
+
+    let selectButton = document.createElement("button");
+    let changeButton = document.createElement("button");
+    let deleteButton = document.createElement("button");
+
+    selectButton.id = idObjectName + 's';
+    changeButton.id = idObjectName + 'c';
+    deleteButton.id = idObjectName + 'd';
+
+    selectButton.className = 'object-action';
+    changeButton.className = 'object-action';
+    deleteButton.className = 'object-action';
+
+    selectButton.innerHTML = 'select';
+    changeButton.innerHTML = 'change';
+    deleteButton.innerHTML = 'delete';
+
+    selectButton.setAttribute('style', "margin-left:20px;background-color: #474B4F;color: rgb(255, 255, 255);font-size: 12px;font-family: Montserrat-Regular;font-weight:200;letter-spacing: 1px;border-radius:20px;height:25px;width:70px;");
+    changeButton.setAttribute('style', "margin-left:20px;background-color: #474B4F;color: rgb(255, 255, 255);font-size: 12px;font-family: Montserrat-Regular;font-weight:200;letter-spacing: 1px;border-radius:20px;height:25px;width:70px;");
+    deleteButton.setAttribute('style', "margin-left:20px;background-color: #474B4F;color: rgb(255, 255, 255);font-size: 12px;font-family: Montserrat-Regular;font-weight:200;letter-spacing: 1px;border-radius:20px;height:25px;width:70px;");
+
+    selectButton.setAttribute('onmouseover', "this.style.backgroundColor='#6B6E70';");
+    changeButton.setAttribute('onmouseover', "this.style.backgroundColor='#6B6E70';");
+    deleteButton.setAttribute('onmouseover', "this.style.backgroundColor='#6B6E70';");
+
+    selectButton.setAttribute('onmouseout', "this.style.backgroundColor='#474B4F';");
+    changeButton.setAttribute('onmouseout', "this.style.backgroundColor='#474B4F';");
+    deleteButton.setAttribute('onmouseout', "this.style.backgroundColor='#474B4F';");
+
+    li.appendChild(selectButton);
+    li.appendChild(changeButton);
+    li.appendChild(deleteButton);
+    ul.appendChild(li);
+    sceneCounter++;
+}
+
 function add3DCube() {
     let cube = addMesh(new THREE.BoxGeometry());
     cube.position.set(0, 0, 0);
-    cube.name = 'Cube';
+    preCreate();
+    cube.name = idObjectName;
     sceneObjects[sceneCounter] = cube;
-    sceneCounter++;
     scene.add(cube);
-    console.log(sceneObjects);
+    createLi();
 }
 
 function add3DSphere() {
     let sphere = addMesh(new THREE.SphereGeometry());
     sphere.position.set(0, 0, 0);
-    sphere.name = 'Sphere';
+    preCreate();
+    sphere.name = idObjectName;
     sceneObjects[sceneCounter] = sphere;
-    sceneCounter++;
     scene.add(sphere);
-    console.log(sceneObjects);
+    createLi();
 }
 
 function add3DPlane() {
     let plane = addMesh(new THREE.PlaneGeometry());
     plane.position.set(0, 0, 0);
-    plane.name = 'Plane';
+    preCreate();
+    plane.name = idObjectName;
     sceneObjects[sceneCounter] = plane;
-    sceneCounter++;
     scene.add(plane);
-    console.log(sceneObjects);
+    createLi();
 }
 
 function add3DText() {
+    let textValue = prompt("Enter the text", 'default 3D text');
     let geometry1;
     let text;
     loaderText.load('./three.js-master/examples/fonts/helvetiker_regular.typeface.json', function (font) {
 
-        geometry1 = new THREE.TextGeometry(textUser, {
+        geometry1 = new THREE.TextGeometry(textValue, {
             font: font,
             size: 0.1,
             height: 0.1,
@@ -296,12 +414,12 @@ function add3DText() {
 
         text.castShadow = true;
         text.position.set(0, 0, 0);
-        text.name = 'Text';
-
+        preCreate();
+        text.name = idObjectName;
         sceneObjects[sceneCounter] = text;
-        sceneCounter++;
-        console.log(sceneObjects);
         scene.add(text);
+        createLi();
+
     });
 }
 
@@ -316,7 +434,10 @@ function addBackground(pathImageOrColor) {
 }
 
 function addSound(pathSound) {
-    let sound = new THREE.Audio(audioListener);//./three.js-master/examples/sounds/358232_j_s_song.ogg
+    if (pathSound === "") {
+        sound.disconnect();
+    }
+    sound = new THREE.Audio(audioListener);
     audioLoader.load(pathSound, function (buffer) {
         sound.setBuffer(buffer);
         sound.setLoop(true);
@@ -327,12 +448,10 @@ function addSound(pathSound) {
 
 function initScene() {
     container = document.querySelector('.container');
-    // Scene
     scene = new THREE.Scene();
 }
 
 function initCamera() {
-    //Camera
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 3000);
     camera.position.z = 0;
     camera.position.y = 0;
@@ -340,16 +459,14 @@ function initCamera() {
 }
 
 function initRender() {
-    //render
     renderer = new THREE.WebGLRenderer({antialias: true});
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setClearColor(0x000000);
+    renderer.setClearColor("#474B4F");
     renderer.shadowMap.enabled = true;
     container.appendChild(renderer.domElement);
 }
 
 function initOrbitControls() {
-    //OrbitControls
     controls = new OrbitControls(camera, renderer.domElement);
     controls.update();
     controls.enableDamping = true;
@@ -357,19 +474,158 @@ function initOrbitControls() {
 }
 
 function initLoaders() {
-    // Sound
     audioListener = new THREE.AudioListener();
     camera.add(audioListener);
     audioLoader = new THREE.AudioLoader();
-    //Texture Loader
     loaderTextures = new THREE.TextureLoader();
-    //3D Text
     loaderText = new THREE.FontLoader();
-    //GLTFLoader
     loaderGLTF = new GLTFLoader();
-    //Raycaster
     raycaster = new THREE.Raycaster();
     clickMouse = new THREE.Vector2();
+}
+
+function addSelectLight(type) {
+    return type === "AmbientLight" || type === "SpotLight" || type === "PointLight";
+}
+
+function selectObject(objectName) {
+    for (let i = 1; i <= sceneCounter; i++) {
+        if (sceneObjects[i].name === objectName) {
+            closeChangeGUI();
+            lastPickObject = sceneObjects[i];
+            if (!target) {
+                if (addSelectLight(sceneObjects[i].type)) {
+                    let geometry = new THREE.BoxGeometry();
+                    let material = new THREE.MeshBasicMaterial({color: 0xffffff});
+                    temp = new THREE.Mesh(geometry, material);
+                } else {
+                    temp = addSelectMesh(sceneObjects[i], sceneObjects[i].geometry.type);
+                }
+                temp.name = "temp";
+                temp.position.set(sceneObjects[i].position.x, sceneObjects[i].position.y, sceneObjects[i].position.z);
+                temp.scale.set(1.2, 1.2, 1.2);
+                temp.material.transparent = true;
+                temp.material.opacity = 0.2;
+                scene.add(temp);
+                target = true;
+            }
+
+            controls.target.copy(sceneObjects[i].position);
+            camera.position.set(sceneObjects[i].position.x, sceneObjects[i].position.y, sceneObjects[i].position.z + 5);
+            break;
+        }
+    }
+}
+
+function changeObject(objectName) {
+    for (let i = 1; i <= sceneCounter; i++) {
+        if (sceneObjects[i].name === objectName) {
+            if (sceneObjects[i] !== lastPickObject) {
+                closeChangeGUI();
+            }
+            lastPickObject = sceneObjects[i];
+            openChangeGUI();
+
+            controls.target.copy(sceneObjects[i].position);
+            camera.position.set(sceneObjects[i].position.x, sceneObjects[i].position.y, sceneObjects[i].position.z + 5);
+            break;
+        }
+    }
+    console.log("change");
+}
+
+function deleteObject(numberObject, objectName) {
+    closeChangeGUI();
+    updateDelete(numberObject);
+    let li = document.getElementsByClassName('object-point');
+    namesObjects[numberObject] = null;
+    li[numberObject - deleteObjects].parentNode.removeChild(li[numberObject - deleteObjects]);
+    scene.remove(scene.getObjectByName(objectName));
+    sceneObjects[numberObject] = null;
+    sceneCounter--;
+    console.log(scene.children);
+}
+
+function initObjectButtonListeners() {
+    let elementsObjects = document.querySelectorAll('.object-action');
+    [].forEach.call(elementsObjects, function (el) {
+        el.onclick = function (e) {
+            if (el.id.charAt(el.id.length - 1) === 's') {
+                removeTemp();
+                selectObject(el.id.substring(0, el.id.length - 1));
+            } else if (el.id.charAt(el.id.length - 1) === 'c') {
+                removeTemp();
+                changeObject(el.id.substring(0, el.id.length - 1));
+            } else if (el.id.charAt(el.id.length - 1) === 'd') {
+                removeTemp();
+                deleteObject(el.id.substring(6, el.id.length - 1), el.id.substring(0, el.id.length - 1));
+            }
+
+        }
+    });
+}
+
+function removeTemp() {
+    if (target) {
+        scene.remove(scene.getObjectByName("temp"));
+        target = false;
+        temp = null;
+    }
+}
+
+function initAddInputListenerScene(countInput) {
+    let elements = document.getElementsByTagName("input");
+    elements[0].onchange = function (e) {
+        addBackground(elements[0].value);
+    }
+    elements[1].onchange = function (e) {
+        addBackground(elements[1].value);
+    }
+    elements[2].onchange = function (e) {
+        setDistance(elements[2].value);
+    }
+    elements[3].onchange = function (e) {
+        addSound(elements[3].value);
+    }
+
+}
+
+
+function setDistance(value) {
+    controls.minDistance = value;
+}
+
+function initAddButtonListeners() {
+    let elements = document.querySelectorAll('.add-button');
+    [].forEach.call(elements, function (el) {
+        el.onclick = function (e) {
+            if (el.id === idPointLight) {
+                addPointLight();
+                initObjectButtonListeners()
+            } else if (el.id === idAmbientLight) {
+                addAmbientLight();
+                initObjectButtonListeners()
+            } else if (el.id === idSpotLight) {
+                addSpotLight();
+                initObjectButtonListeners()
+            } else if (el.id === id3Model) {
+                add3DModel();
+                initObjectButtonListeners()
+            } else if (el.id === id3Cube) {
+                add3DCube();
+                initObjectButtonListeners()
+            } else if (el.id === id3Sphere) {
+                add3DSphere();
+                initObjectButtonListeners()
+            } else if (el.id === id3Plane) {
+                add3DPlane();
+                initObjectButtonListeners()
+            } else if (el.id === id3Text) {
+                add3DText();
+                initObjectButtonListeners()
+            }
+        }
+    });
 }
 
 init();
