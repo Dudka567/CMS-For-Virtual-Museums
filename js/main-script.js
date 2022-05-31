@@ -1,5 +1,5 @@
-import {OrbitControls} from 'https://cdn.jsdelivr.net/npm/three@0.121.1/examples/jsm/controls/OrbitControls.js'
-import {GLTFLoader} from "../three.js-master/examples/jsm/loaders/GLTFLoader.js";
+import {OrbitControls} from './lib/OrbitControls.js'
+import {GLTFLoader} from "./lib/GLTFLoader.js";
 
 const idPointLight = "point-light";
 const idAmbientLight = "ambient-light";
@@ -17,7 +17,7 @@ let renderer;
 let container;
 
 let object3Dgui;
-let gui = null;
+let gui;
 
 let controls;
 let loaderGLTF;
@@ -30,17 +30,33 @@ let sound;
 let raycaster;
 let clickMouse;
 
-let sceneObjects = new Array(100);
-let sceneCounter = 1;
-let deleteObjects = 0;
-let namesObjects = new Array(100);
-namesObjects[1] = null;
+let sceneObjects;
+let sceneCounter;
+let deleteObjects;
+let namesObjects;
 let idObjectName;
 
-let lastPickObject = null;
+let lastPickObject;
 let temp;
-let target = false;
+let target;
 let node;
+
+function initFields() {
+    sceneObjects = new Array(100);
+    sceneCounter = 1;
+    deleteObjects = 0;
+    namesObjects = new Array(100);
+    namesObjects[1] = null;
+    lastPickObject = null;
+    target = false;
+    gui = null;
+}
+
+function deleteHTML() {
+    while (sceneCounter !== 1) {
+        deleteObject(sceneCounter - 1, "Object" + (sceneCounter - 1));
+    }
+}
 
 function init() {
     initScene();
@@ -50,6 +66,9 @@ function init() {
     initLoaders();
     initAddButtonListeners();
     initAddInputListenerScene();
+    initSceneActionButtonListeners();
+    initFields();
+    deleteHTML();
 
     object3Dgui = {
         name: "",
@@ -111,7 +130,6 @@ function init() {
             }
             if ("color" in object3Dgui) {
                 if (lastPickObject.type === "Mesh") {
-                    console.log(lastPickObject);
                     if (lastPickObject.geometry.type === "TextGeometry") {
                         lastPickObject.material[0].color.set(object3Dgui.color);
                         lastPickObject.material[1].color.set("#111");
@@ -361,7 +379,9 @@ function createLi() {
     li.appendChild(selectButton);
     li.appendChild(changeButton);
     li.appendChild(deleteButton);
-    ul.appendChild(li);
+    let beforeElemCount = 1 + parseInt(idObjectName.substring(6, idObjectName.length));
+    let beforeElem = document.getElementById("Object" + beforeElemCount);
+    ul.insertBefore(li, beforeElem);
     sceneCounter++;
 }
 
@@ -531,7 +551,6 @@ function changeObject(objectName) {
             break;
         }
     }
-    console.log("change");
 }
 
 function deleteObject(numberObject, objectName) {
@@ -543,13 +562,12 @@ function deleteObject(numberObject, objectName) {
     scene.remove(scene.getObjectByName(objectName));
     sceneObjects[numberObject] = null;
     sceneCounter--;
-    console.log(scene.children);
 }
 
 function initObjectButtonListeners() {
     let elementsObjects = document.querySelectorAll('.object-action');
     [].forEach.call(elementsObjects, function (el) {
-        el.onclick = function (e) {
+        el.onclick = function () {
             if (el.id.charAt(el.id.length - 1) === 's') {
                 removeTemp();
                 selectObject(el.id.substring(0, el.id.length - 1));
@@ -573,18 +591,18 @@ function removeTemp() {
     }
 }
 
-function initAddInputListenerScene(countInput) {
+function initAddInputListenerScene() {
     let elements = document.getElementsByTagName("input");
-    elements[0].onchange = function (e) {
+    elements[0].onchange = function () {
         addBackground(elements[0].value);
     }
-    elements[1].onchange = function (e) {
+    elements[1].onchange = function () {
         addBackground(elements[1].value);
     }
-    elements[2].onchange = function (e) {
+    elements[2].onchange = function () {
         setDistance(elements[2].value);
     }
-    elements[3].onchange = function (e) {
+    elements[3].onchange = function () {
         addSound(elements[3].value);
     }
 
@@ -595,10 +613,57 @@ function setDistance(value) {
     controls.minDistance = value;
 }
 
+function initSceneActionButtonListeners() {
+    document.getElementById("newScene").onclick = function () {
+        deleteHTML();
+        initFields();
+    }
+    document.getElementById("loadScene").onclick = function () {
+        deleteHTML();
+        initFields();
+
+        function getFileSity(fileName) {
+            let request = new XMLHttpRequest();
+            request.open('GET', fileName, false);
+            request.send(null);
+            return JSON.parse(request.responseText);
+        }
+
+        let newScene = getFileSity(prompt("Enter the file name .JSON", "../resources/filename.json"));
+        scene = new THREE.ObjectLoader().parse(newScene);
+        let newSceneObjects = scene.children;
+        console.log(newSceneObjects);
+        for (let i = 0; i < newSceneObjects.length; i++) {
+            preCreate();
+            sceneObjects[sceneCounter] = newSceneObjects[i];
+            createLi();
+        }
+
+    }
+    document.getElementById("saveScene").onclick = function () {
+        scene.updateMatrixWorld();
+        let result = scene.toJSON();
+        let output = JSON.stringify(result);
+
+        function download(content, fileName, contentType) {
+            let a = document.createElement("a");
+            let file = new Blob([content], {type: contentType});
+            a.href = URL.createObjectURL(file);
+            a.download = fileName;
+            a.click();
+        }
+
+        download(output, prompt("Enter the name scene", ""), 'application/json');
+        //нужно удалить dat gui и обработчики клика на обьекты, но обработчики клина удалять скоере всего не надо
+        //протестриовать на странцие со сценами
+    }
+
+}
+
 function initAddButtonListeners() {
     let elements = document.querySelectorAll('.add-button');
     [].forEach.call(elements, function (el) {
-        el.onclick = function (e) {
+        el.onclick = function () {
             if (el.id === idPointLight) {
                 addPointLight();
                 initObjectButtonListeners()
