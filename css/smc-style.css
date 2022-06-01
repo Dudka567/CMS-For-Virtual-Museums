@@ -119,7 +119,6 @@ h2{
     text-decoration: none;
 }
 
-/* Change the link color on hover */
 .object-point a:hover {
     background-color: #555;
     color: white;
@@ -186,7 +185,6 @@ h5{
     scrollbar-color: #86c232 #474b4f;
 }
 
-/* для Chrome/Edge/Safari */
 *::-webkit-scrollbar {
     height: 14px;
     width: 14px;

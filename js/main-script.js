@@ -40,8 +40,11 @@ let lastPickObject;
 let temp;
 let target;
 let node;
+let sceneProperties;
+
 
 function initFields() {
+    sceneProperties = new Array(4);
     sceneObjects = new Array(100);
     sceneCounter = 1;
     deleteObjects = 0;
@@ -50,6 +53,11 @@ function initFields() {
     lastPickObject = null;
     target = false;
     gui = null;
+    sceneProperties[0] = "#474B4F";
+    sceneProperties[1] = "./resources/";
+    sceneProperties[2] = 5;
+    sceneProperties[3] = "./resources/";
+    scene.name = sceneProperties;
 }
 
 function deleteHTML() {
@@ -184,9 +192,9 @@ function openChangeGUI() {
         object3Dgui.rotationZ = lastPickObject.rotation.z;
 
         gui.add(object3Dgui, 'name');
-        gui.add(object3Dgui, 'positionX').min(-30).max(30).step(0.001);
-        gui.add(object3Dgui, 'positionY').min(-30).max(30).step(0.001);
-        gui.add(object3Dgui, 'positionZ').min(-30).max(30).step(0.001);
+        gui.add(object3Dgui, 'positionX').min(-30).max(30).step(0.0001);
+        gui.add(object3Dgui, 'positionY').min(-30).max(30).step(0.0001);
+        gui.add(object3Dgui, 'positionZ').min(-30).max(30).step(0.0001);
         gui.add(object3Dgui, 'rotationX').min(-4).max(4).step(0.001);
         gui.add(object3Dgui, 'rotationY').min(-4).max(4).step(0.001);
         gui.add(object3Dgui, 'rotationZ').min(-4).max(4).step(0.001);
@@ -275,15 +283,15 @@ function addSpotLight() {
 
 function add3DModel() {
     let pathGLTF = prompt('Enter the path to the file .gltf', '../resources/RomeAbak/RomeAbak.gltf');
-    let romeAbak1;
+    let modelObject;
     loaderGLTF.load(pathGLTF, gltf => {
-            romeAbak1 = gltf.scene;
-            romeAbak1.position.set(0, 0, 0);
+            modelObject = gltf.scene;
+            modelObject.position.set(0, 0, 0);
             preCreate();
-            romeAbak1.children[0].name = idObjectName;
-            romeAbak1.name = idObjectName;
-            sceneObjects[sceneCounter] = romeAbak1.children[0];
-            scene.add(romeAbak1);
+            modelObject.children[0].name = idObjectName;
+            modelObject.name = idObjectName;
+            sceneObjects[sceneCounter] = modelObject.children[0];
+            scene.add(modelObject);
             createLi();
         },
         function (error) {
@@ -419,7 +427,7 @@ function add3DText() {
     let textValue = prompt("Enter the text", 'default 3D text');
     let geometry1;
     let text;
-    loaderText.load('./three.js-master/examples/fonts/helvetiker_regular.typeface.json', function (font) {
+    loaderText.load('../resources/helvetiker_regular.typeface.json', function (font) {
 
         geometry1 = new THREE.TextGeometry(textValue, {
             font: font,
@@ -446,14 +454,18 @@ function add3DText() {
 function addBackground(pathImageOrColor) {
     if (pathImageOrColor.charAt(0) === '#') {
         scene.background = new THREE.Color(pathImageOrColor);
+        sceneProperties[0] = '#'+scene.background.getHexString();
     } else {
         loaderTextures.load(pathImageOrColor, function (texture) {
             scene.background = texture;
+            sceneProperties[1] = pathImageOrColor;
         });
     }
 }
 
+
 function addSound(pathSound) {
+    sceneProperties[3] = pathSound;
     if (pathSound === "") {
         sound.disconnect();
     }
@@ -469,6 +481,7 @@ function addSound(pathSound) {
 function initScene() {
     container = document.querySelector('.container');
     scene = new THREE.Scene();
+    scene.background = new THREE.Color("#474B4F");
 }
 
 function initCamera() {
@@ -610,15 +623,26 @@ function initAddInputListenerScene() {
 
 
 function setDistance(value) {
+    sceneProperties[2] = value;
     controls.minDistance = value;
 }
 
 function initSceneActionButtonListeners() {
     document.getElementById("newScene").onclick = function () {
+        let sceneSetting = document.getElementsByTagName("input");
         deleteHTML();
         initFields();
+        sceneSetting[0].value = "#474B4F";
+        addBackground(sceneSetting[0].value);
+        sceneSetting[1].value = "./resources/";
+        addBackground(sceneSetting[1].value);
+        sceneSetting[2].value = "5";
+        setDistance(sceneSetting[2].value);
+        sceneSetting[3].value = "./resources/";
+
     }
     document.getElementById("loadScene").onclick = function () {
+        let sceneSetting = document.getElementsByTagName("input");
         deleteHTML();
         initFields();
 
@@ -629,15 +653,22 @@ function initSceneActionButtonListeners() {
             return JSON.parse(request.responseText);
         }
 
-        let newScene = getFileSity(prompt("Enter the file name .JSON", "../resources/filename.json"));
+        let newScene = getFileSity(prompt("Enter the file name .JSON", "../resources/test.json"));
         scene = new THREE.ObjectLoader().parse(newScene);
         let newSceneObjects = scene.children;
-        console.log(newSceneObjects);
         for (let i = 0; i < newSceneObjects.length; i++) {
             preCreate();
             sceneObjects[sceneCounter] = newSceneObjects[i];
             createLi();
         }
+        addBackground(scene.name[0]);
+        sceneSetting[0].value = scene.name[0];
+        addBackground(scene.name[1]);
+        sceneSetting[1].value = scene.name[1];
+        setDistance(scene.name[2]);
+        sceneSetting[2].value = scene.name[2];
+        addSound(scene.name[3]);
+        sceneSetting[3].value = scene.name[3];
 
     }
     document.getElementById("saveScene").onclick = function () {
@@ -652,10 +683,11 @@ function initSceneActionButtonListeners() {
             a.download = fileName;
             a.click();
         }
+        let name = prompt("Enter the name scene", "");
+        if(name!=="" && name!==null){
+            download(output, name, 'application/json');
+        }
 
-        download(output, prompt("Enter the name scene", ""), 'application/json');
-        //нужно удалить dat gui и обработчики клика на обьекты, но обработчики клина удалять скоере всего не надо
-        //протестриовать на странцие со сценами
     }
 
 }
