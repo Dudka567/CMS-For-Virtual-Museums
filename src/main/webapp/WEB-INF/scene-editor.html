@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Scene-Editor</title>
+    <link rel="stylesheet" href="../resources/css/smc-style.css">
+    <script src="../resources/js/lib/three.js"></script>
+    <script src="../resources/js/lib/dat.gui.js"></script>
+    <script src="../resources/js/main-script1.js" type="module"></script>
+</head>
+
+<body>
+<ul id="points" class="add-panel">
+    <li id="firstAdd">
+        <img id="image" src="../resources/css/mus-icon.png" height="50px" width="70px" class="add-point"/>
+        <h3>ADD PANEL</h3>
+    </li>
+    <li class="add-point">
+        <button class="add-button" id="point-light">Point Light</button>
+    </li>
+    <li class="add-point">
+        <button class="add-button" id="ambient-light">Ambient Light</button>
+    </li>
+    <li class="add-point">
+        <button class="add-button" id="spot-light">Spot Light</button>
+    </li>
+    <li class="add-point">
+        <button class="add-button" id="3D-cube">3D Cube</button>
+    </li>
+    <li class="add-point">
+        <button class="add-button" id="3D-sphere">3D Sphere</button>
+    </li>
+    <li class="add-point">
+        <button class="add-button" id="3D-plane">3D Plane</button>
+    </li>
+    <li class="add-point">
+        <button class="add-button" id="3D-model">3D Model</button>
+    </li>
+    <li class="add-point">
+        <button class="add-button" id="3D-text">3D Text</button>
+    </li>
+</ul>
+
+<ul id="objects" class="objects-panel">
+    <li id="objects-first" class="object-point">
+        <h2>
+            OBJECTS IN SCENE
+        </h2>
+    </li>
+</ul>
+
+<ul id="settings" class="scene-panel">
+    <li id="scene-first" class="object-point">
+        <h2>
+            SCENE SETTING
+        </h2>
+    </li>
+    <li class="object-point">
+        <h4>Background-color:
+            <input type="text" value="#bfbec3"/>
+        </h4>
+    </li>
+    <li class="object-point">
+        <h4>Background-image:
+            <input type="text" value="resources/"/>
+        </h4>
+    </li>
+    <li class="object-point">
+        <h4>Min-distance:
+            <input type="text" value="5"/>
+        </h4>
+    </li>
+    <li class="object-point">
+        <h4>Background-sound:
+            <input type="text" value="resources/"/>
+        </h4>
+    </li>
+    <li id="settings-first" class="object-point">
+        <h2>
+            SCENE ACTIONS
+        </h2>
+    </li>
+    <li class="object-point">
+        <button id="newScene" class="action-button" onmouseover="this.style.backgroundColor='#37d4c6';" onmouseout="this.style.backgroundColor='#32c3b6';" style="margin-left:15px;background-color: #32c3b6;color: rgb(255, 255, 255);font-size: 12px;font-family: Montserrat-Regular;font-weight:200;letter-spacing: 1px;border-radius:20px;border-color:#32c3b6;height:25px;width:97px;">
+            Clear
+        </button>
+        <button id="loadScene" class="action-button" onmouseover="this.style.backgroundColor='#37d4c6';" onmouseout="this.style.backgroundColor='#32c3b6';" style="margin-left:15px;background-color: #32c3b6;color: rgb(255, 255, 255);font-size: 12px;font-family: Montserrat-Regular;font-weight:200;letter-spacing: 1px;border-radius:20px;border-color:#32c3b6;height:25px;width:97px;">
+            Load Scene
+        </button>
+        <button id="saveScene" class="action-button" onmouseover="this.style.backgroundColor='#37d4c6';" onmouseout="this.style.backgroundColor='#32c3b6';" style="margin-left:15px;background-color: #32c3b6;color: rgb(255, 255, 255);font-size: 12px;font-family: Montserrat-Regular;font-weight:200;letter-spacing: 1px;border-radius:20px;border-color:#32c3b6;height:25px;width:97px;">
+            Save Scene
+        </button>
+    </li>
+</ul>
+
+<div class="container"></div>
+
+
+</body>
+</html>
