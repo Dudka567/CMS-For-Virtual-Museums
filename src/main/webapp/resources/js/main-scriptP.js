@@ -42,22 +42,11 @@ let target;
 let node;
 let sceneProperties;
 
-let settings;
-let id;
-
-function getUrlAtr(){
-    const params = new Proxy(new URLSearchParams(window.location.search), {
-        get: (searchParams, prop) => searchParams.get(prop),
-    });
-    id = params.id;
-    settings = params.settings;
-    let newScene = JSON.parse(settings);
-    // scene = new THREE.ObjectLoader().parse(newScene);
-    // let newSceneObjects = scene.children;
-    console.log(settings);
-    console.log(newScene);
-    scene = new THREE.ObjectLoader().parse(newScene);
-}
+let result;
+let settingsScene;
+let nameScene;
+let titleScene;
+let idScene;
 
 function initFields() {
     sceneProperties = new Array(4);
@@ -645,6 +634,28 @@ function setDistance(value) {
     controls.minDistance = value;
 }
 
+function post(path, params, method='post'){
+
+    const form = document.createElement('form');
+    form.method = method;
+    form.action = path;
+    form.enctype = "multipart/form-data";
+
+    for (const key in params) {
+        if (params.hasOwnProperty(key)) {
+            const hiddenField = document.createElement('input');
+            hiddenField.type = 'hidden';
+            hiddenField.name = key;
+            hiddenField.value = params[key];
+
+            form.appendChild(hiddenField);
+        }
+    }
+
+    document.body.appendChild(form);
+    form.submit();
+}
+
 function initSceneActionButtonListeners() {
     document.getElementById("newScene").onclick = function () {
         let sceneSetting = document.getElementsByTagName("input");
@@ -659,21 +670,70 @@ function initSceneActionButtonListeners() {
         sceneSetting[3].value = "resources/";
 
     }
-    document.getElementById("loadScene").onclick = function () {
-        let sceneSetting = document.getElementsByTagName("input");
-        deleteHTML();
-        initFields();
-        function getFileSity(fileName) {
-            let request = new XMLHttpRequest();
-            request.open('GET', fileName, false);
-            request.send(null);
-            return JSON.parse(request.responseText);
+
+    document.getElementById("deleteScene").onclick = function () {
+        if(document.getElementById("objects").getAttribute('data') !== "NewScene"){
+            notNewPost('/deleteScene');
         }
-        let newScene = getFileSity(prompt("Enter the file name .JSON", "resources/romeAbak.json"));
+    }
+
+    document.getElementById("saveScene").onclick = function () {
+        if(document.getElementById("objects").getAttribute('data') === "NewScene"){
+            // saveJSON();
+            let saveScene = new Object();
+            saveScene.name = scene.name;
+            saveScene.children = scene.children[0].toJSON();
+            let sceneJSON = JSON.stringify(saveScene);
+            // console.log(scene.children[0].toJSON());
+
+
+            settingsScene = sceneJSON;
+            let nameScene = prompt("Enter the name scene", "");
+            let titleScene = prompt("Enter the path file image", "resources/img/.png");
+            post('/addScene',{id : 1,settings: settingsScene,name: nameScene, title: titleScene});
+
+            // let saveScene = new Object();
+            // saveScene.name = scene.name;
+            // saveScene.children = scene.children;
+            // let sceneJSON = JSON.stringify(saveScene);
+            // console.log(sceneJSON);
+        }
+        else{
+            notNewPost('/updateScene');
+        }
+
+    }
+
+}
+
+function notNewPost(url){
+    saveJSON();
+    nameScene = document.getElementById("objects").getAttribute('data');
+    titleScene = document.getElementById("saveScene").getAttribute('data');
+    idScene = document.getElementById("points").getAttribute('data');
+    post(url,{id : idScene,settings: settingsScene,name: nameScene, title: titleScene});
+}
+
+function saveJSON(){
+    scene.updateMatrixWorld();
+    let saveScene = new Object();
+    saveScene.name = scene.name;
+    saveScene.children = scene.children;
+    settingsScene = JSON.stringify(saveScene);
+    // result = scene.toJSON();
+    // settingsScene = JSON.stringify(result);
+}
+
+function loadScene(){
+        let sceneSetting = document.getElementsByTagName("input");
+        function getFileSity(settings) {
+            console.log(settings);
+            return JSON.parse(settings);
+        }
+        let newScene = getFileSity( document.getElementById("newScene").getAttribute('data'));
         scene = new THREE.ObjectLoader().parse(newScene);
 
         let newSceneObjects = scene.children;
-        scene.add(new THREE.ObjectLoader().parse(scene.children[1].toJSON()));
 
         for (let i = 0; i < newSceneObjects.length; i++) {
             preCreate();
@@ -688,26 +748,6 @@ function initSceneActionButtonListeners() {
         sceneSetting[2].value = scene.name[2];
         addSound(scene.name[3]);
         sceneSetting[3].value = scene.name[3];
-
-    }
-    document.getElementById("saveScene").onclick = function () {
-        scene.updateMatrixWorld();
-        let result = scene.toJSON();
-        let output = JSON.stringify(result);
-        function download(content, fileName, contentType) {
-            let a = document.createElement("a");
-            let file = new Blob([content], {type: contentType});
-            a.href = URL.createObjectURL(file);
-            a.download = fileName;
-            a.click();
-        }
-        let name = prompt("Enter the name scene", "");
-        if(name!=="" && name!==null){
-            download(output, name, 'application/json');
-        }
-
-    }
-
 }
 
 function initAddButtonListeners() {
@@ -744,3 +784,4 @@ function initAddButtonListeners() {
 }
 
 init();
+loadScene();

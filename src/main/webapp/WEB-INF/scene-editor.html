@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+<html xmlns:th="http://www.thymeleaf.org" xmlns: lang="ru">
 
 <head>
     <meta charset="UTF-8">
@@ -7,11 +8,11 @@
     <link rel="stylesheet" href="../resources/css/smc-style.css">
     <script src="../resources/js/lib/three.js"></script>
     <script src="../resources/js/lib/dat.gui.js"></script>
-    <script src="../resources/js/main-script1.js" type="module"></script>
+    <script src="../resources/js/main-scriptP.js" type="module"></script>
 </head>
 
 <body>
-<ul id="points" class="add-panel">
+<ul id="points" th:data="${id}" class="add-panel">
     <li id="firstAdd">
         <img id="image" src="../resources/css/mus-icon.png" height="50px" width="70px" class="add-point"/>
         <h3>ADD PANEL</h3>
@@ -42,7 +43,7 @@
     </li>
 </ul>
 
-<ul id="objects" class="objects-panel">
+<ul id="objects" th:data="${name}" class="objects-panel">
     <li id="objects-first" class="object-point">
         <h2>
             OBJECTS IN SCENE
@@ -82,14 +83,14 @@
         </h2>
     </li>
     <li class="object-point">
-        <button id="newScene" class="action-button" onmouseover="this.style.backgroundColor='#37d4c6';" onmouseout="this.style.backgroundColor='#32c3b6';" style="margin-left:15px;background-color: #32c3b6;color: rgb(255, 255, 255);font-size: 12px;font-family: Montserrat-Regular;font-weight:200;letter-spacing: 1px;border-radius:20px;border-color:#32c3b6;height:25px;width:97px;">
+        <button id="newScene" th:data="${settings}" class="action-button" onmouseover="this.style.backgroundColor='#37d4c6';" onmouseout="this.style.backgroundColor='#32c3b6';" style="margin-left:15px;background-color: #32c3b6;color: rgb(255, 255, 255);font-size: 12px;font-family: Montserrat-Regular;font-weight:200;letter-spacing: 1px;border-radius:20px;border-color:#32c3b6;height:25px;width:97px;">
             Clear
         </button>
-        <button id="loadScene" class="action-button" onmouseover="this.style.backgroundColor='#37d4c6';" onmouseout="this.style.backgroundColor='#32c3b6';" style="margin-left:15px;background-color: #32c3b6;color: rgb(255, 255, 255);font-size: 12px;font-family: Montserrat-Regular;font-weight:200;letter-spacing: 1px;border-radius:20px;border-color:#32c3b6;height:25px;width:97px;">
-            Load Scene
+        <button id="deleteScene" class="action-button" onmouseover="this.style.backgroundColor='#37d4c6';" onmouseout="this.style.backgroundColor='#32c3b6';" style="margin-left:15px;background-color: #32c3b6;color: rgb(255, 255, 255);font-size: 12px;font-family: Montserrat-Regular;font-weight:200;letter-spacing: 1px;border-radius:20px;border-color:#32c3b6;height:25px;width:97px;">
+            Delete
         </button>
-        <button id="saveScene" class="action-button" onmouseover="this.style.backgroundColor='#37d4c6';" onmouseout="this.style.backgroundColor='#32c3b6';" style="margin-left:15px;background-color: #32c3b6;color: rgb(255, 255, 255);font-size: 12px;font-family: Montserrat-Regular;font-weight:200;letter-spacing: 1px;border-radius:20px;border-color:#32c3b6;height:25px;width:97px;">
-            Save Scene
+        <button id="saveScene" th:data="${title}" class="action-button" onmouseover="this.style.backgroundColor='#37d4c6';" onmouseout="this.style.backgroundColor='#32c3b6';" style="margin-left:15px;background-color: #32c3b6;color: rgb(255, 255, 255);font-size: 12px;font-family: Montserrat-Regular;font-weight:200;letter-spacing: 1px;border-radius:20px;border-color:#32c3b6;height:25px;width:97px;">
+            Save
         </button>
     </li>
 </ul>

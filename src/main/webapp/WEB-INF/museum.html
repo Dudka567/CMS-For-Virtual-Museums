@@ -16,12 +16,12 @@
 
 <div class="gallery">
     <div th:each="scene : ${scenes}">
-        <form method="post" action="/cms" name="id" value="1" th:value="${scene.getId()}" class="gallery_item">
-            <button>
-                <img th:src="${scene.getTitle()}" alt="Alt">
+            <button class="gallery_item">
+                <a th:href="@{/cms(id=${scene.getId()})}">
+                    <img th:src="${scene.getTitle()}" alt="Alt">
+                </a>
                 <p th:text="${scene.getName()}" style="font-family: 'Agency FB';font-size: 5px;"></p>
             </button>
-        </form>
     </div>
 </div>
 </body>

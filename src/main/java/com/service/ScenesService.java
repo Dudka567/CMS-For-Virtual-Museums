@@ -12,6 +12,23 @@ public class ScenesService {
     @Autowired
     ScenesRepository scenesRepository;
 
+    public Scenes addScene(String settings, String name, String title){
+        Scenes newScene = new Scenes(title, settings, name);
+        scenesRepository.save(newScene);
+        return newScene;
+    }
+
+    public Scenes saveScene(Long id,String settings, String name, String title){
+        Scenes newScene = new Scenes(id, title, settings, name);
+        scenesRepository.save(newScene);
+        return newScene;
+    }
+
+    public void deleteScene(Long id,String settings, String name, String title){
+        Scenes newScene = new Scenes(id, title, settings, name);
+        scenesRepository.delete(newScene);
+    }
+
     public String getNameByID(Long id){
         return scenesRepository.getOne(id).getName();
     }
