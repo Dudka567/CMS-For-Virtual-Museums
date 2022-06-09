@@ -47,6 +47,8 @@ let settingsScene;
 let nameScene;
 let titleScene;
 let idScene;
+let saveScene = new Object();
+
 
 function initFields() {
     sceneProperties = new Array(4);
@@ -430,6 +432,38 @@ function add3DPlane() {
     createLi();
 }
 
+function clone3DText(userData) {
+    let textValue = userData.textValue;
+    let geometry1;
+    let text;
+    loaderText.load('../resources/helvetiker_regular.typeface.json', function (font) {
+
+        geometry1 = new THREE.TextGeometry(textValue, {
+            font: font,
+            size: 0.1,
+            height: 0.1,
+        });
+
+
+        text = new THREE.Mesh(geometry1, [
+            new THREE.MeshPhongMaterial({color: 0xad4000}),
+            new THREE.MeshPhongMaterial({color: 0x5c2301})
+        ]);
+        console.log(text.material[0].color.getHexString());
+        text.castShadow = true;
+        text.material[0].color.set(userData.textColor);
+        text.position.set(userData.textPosition.x, userData.textPosition.y, userData.textPosition.z);
+        text.rotation.set(userData.textRotation._x, userData.textRotation._y+1, userData.textRotation._z,userData.textRotation._order)
+        text.scale.set(userData.textScale.x, userData.textScale.y, userData.textScale.z);
+        preCreate();
+        text.name = idObjectName;
+        text.userData.textValue = textValue;
+        sceneObjects[sceneCounter] = text;
+        scene.add(text);
+        createLi();
+    });
+}
+
 function add3DText() {
     let textValue = prompt("Enter the text", 'default 3D text');
     let geometry1;
@@ -442,6 +476,7 @@ function add3DText() {
             height: 0.1,
         });
 
+
         text = new THREE.Mesh(geometry1, [
             new THREE.MeshPhongMaterial({color: 0xad4000}),
             new THREE.MeshPhongMaterial({color: 0x5c2301})
@@ -451,10 +486,14 @@ function add3DText() {
         text.position.set(0, 0, 0);
         preCreate();
         text.name = idObjectName;
+        text.userData.textValue = textValue;
+        text.userData.textPosition = text.position;
+        text.userData.textRotation = text.rotation;
+        text.userData.textScale = text.scale;
+        text.userData.textColor = text.material[0].color;
         sceneObjects[sceneCounter] = text;
         scene.add(text);
         createLi();
-
     });
 }
 
@@ -462,10 +501,12 @@ function addBackground(pathImageOrColor) {
     if (pathImageOrColor.charAt(0) === '#') {
         scene.background = new THREE.Color(pathImageOrColor);
         sceneProperties[0] = '#'+scene.background.getHexString();
+        scene.name[0] = sceneProperties[0];
     } else {
         loaderTextures.load(pathImageOrColor, function (texture) {
             scene.background = texture;
             sceneProperties[1] = pathImageOrColor;
+            scene.name[1] = sceneProperties[1];
         });
     }
 }
@@ -473,6 +514,7 @@ function addBackground(pathImageOrColor) {
 
 function addSound(pathSound) {
     sceneProperties[3] = pathSound;
+    scene.name[3] = sceneProperties[3];
     if (pathSound === "") {
         sound.disconnect();
     }
@@ -631,6 +673,7 @@ function initAddInputListenerScene() {
 
 function setDistance(value) {
     sceneProperties[2] = value;
+    scene.name[2] = sceneProperties[2];
     controls.minDistance = value;
 }
 
@@ -679,24 +722,11 @@ function initSceneActionButtonListeners() {
 
     document.getElementById("saveScene").onclick = function () {
         if(document.getElementById("objects").getAttribute('data') === "NewScene"){
-            // saveJSON();
-            let saveScene = new Object();
-            saveScene.name = scene.name;
-            saveScene.children = scene.children[0].toJSON();
-            let sceneJSON = JSON.stringify(saveScene);
-            // console.log(scene.children[0].toJSON());
-
-
-            settingsScene = sceneJSON;
+            saveJSON();
+            console.log(settingsScene);
             let nameScene = prompt("Enter the name scene", "");
             let titleScene = prompt("Enter the path file image", "resources/img/.png");
             post('/addScene',{id : 1,settings: settingsScene,name: nameScene, title: titleScene});
-
-            // let saveScene = new Object();
-            // saveScene.name = scene.name;
-            // saveScene.children = scene.children;
-            // let sceneJSON = JSON.stringify(saveScene);
-            // console.log(sceneJSON);
         }
         else{
             notNewPost('/updateScene');
@@ -715,41 +745,62 @@ function notNewPost(url){
 }
 
 function saveJSON(){
-    scene.updateMatrixWorld();
-    let saveScene = new Object();
     saveScene.name = scene.name;
-    saveScene.children = scene.children;
+    saveScene.children = new Array();
+    for( let i = 0; i < scene.children.length; i++){
+        saveScene.children[i] = scene.children[i].toJSON();
+    }
     settingsScene = JSON.stringify(saveScene);
-    // result = scene.toJSON();
-    // settingsScene = JSON.stringify(result);
 }
 
 function loadScene(){
         let sceneSetting = document.getElementsByTagName("input");
         function getFileSity(settings) {
-            console.log(settings);
             return JSON.parse(settings);
         }
         let newScene = getFileSity( document.getElementById("newScene").getAttribute('data'));
-        scene = new THREE.ObjectLoader().parse(newScene);
 
-        let newSceneObjects = scene.children;
-
-        for (let i = 0; i < newSceneObjects.length; i++) {
+        for (let i = 0; i < newScene.children.length; i++) {
             preCreate();
-            sceneObjects[sceneCounter] = newSceneObjects[i];
+            scene.children[i] = new THREE.ObjectLoader().parse(newScene.children[i]);
+            sceneObjects[sceneCounter] = newScene.children[i];
             createLi();
+            if(newScene.children[i].hasOwnProperty("geometries")){
+                if(newScene.children[i].geometries[0].type === "TextGeometry") {
+                    console.log(newScene.children[i]);
+                    clone3DText(newScene.children[i].object.userData);
+                }
+            }
         }
-        addBackground(scene.name[0]);
-        sceneSetting[0].value = scene.name[0];
-        addBackground(scene.name[1]);
-        sceneSetting[1].value = scene.name[1];
-        setDistance(scene.name[2]);
-        sceneSetting[2].value = scene.name[2];
-        addSound(scene.name[3]);
-        sceneSetting[3].value = scene.name[3];
+        scene.name = newScene.name;
+        addBackground(newScene.name[0]);
+        sceneSetting[0].value = newScene.name[0];
+        addBackground(newScene.name[1]);
+        sceneSetting[1].value = newScene.name[1];
+        setDistance(newScene.name[2]);
+        sceneSetting[2].value = newScene.name[2];
+        addSound(newScene.name[3]);
+        sceneSetting[3].value = newScene.name[3];
 }
-
+// if(newScene.children[i].object.hasOwnProperty("material")){
+//     if(newScene.children[i].object.material.length === 2){
+//         add3DTextExtend(newScene.children[i].object.userData.textValue);
+//         console.log("text");
+//     }else {
+//         preCreate();
+//         scene.children[i] = new THREE.ObjectLoader().parse(newScene.children[i]);
+//         sceneObjects[sceneCounter] = newScene.children[i];
+//         createLi();
+//         console.log("ntdfs");
+//     }
+// }
+// else{
+//     console.log("1234");
+//     preCreate();
+//     scene.children[i] = new THREE.ObjectLoader().parse(newScene.children[i]);
+//     sceneObjects[sceneCounter] = newScene.children[i];
+//     createLi();
+// }
 function initAddButtonListeners() {
     let elements = document.querySelectorAll('.add-button');
     [].forEach.call(elements, function (el) {
