@@ -449,9 +449,9 @@ function clone3DText(userData) {
             new THREE.MeshPhongMaterial({color: 0xad4000}),
             new THREE.MeshPhongMaterial({color: 0x5c2301})
         ]);
-        console.log(text.material[0].color.getHexString());
         text.castShadow = true;
         text.material[0].color.set(userData.textColor);
+        text.material[1].color.set("#111");
         text.position.set(userData.textPosition.x, userData.textPosition.y, userData.textPosition.z);
         text.rotation.set(userData.textRotation._x, userData.textRotation._y+1, userData.textRotation._z,userData.textRotation._order)
         text.scale.set(userData.textScale.x, userData.textScale.y, userData.textScale.z);
@@ -723,7 +723,6 @@ function initSceneActionButtonListeners() {
     document.getElementById("saveScene").onclick = function () {
         if(document.getElementById("objects").getAttribute('data') === "NewScene"){
             saveJSON();
-            console.log(settingsScene);
             let nameScene = prompt("Enter the name scene", "");
             let titleScene = prompt("Enter the path file image", "resources/img/.png");
             post('/addScene',{id : 1,settings: settingsScene,name: nameScene, title: titleScene});
@@ -767,7 +766,6 @@ function loadScene(){
             createLi();
             if(newScene.children[i].hasOwnProperty("geometries")){
                 if(newScene.children[i].geometries[0].type === "TextGeometry") {
-                    console.log(newScene.children[i]);
                     clone3DText(newScene.children[i].object.userData);
                 }
             }
@@ -782,25 +780,7 @@ function loadScene(){
         addSound(newScene.name[3]);
         sceneSetting[3].value = newScene.name[3];
 }
-// if(newScene.children[i].object.hasOwnProperty("material")){
-//     if(newScene.children[i].object.material.length === 2){
-//         add3DTextExtend(newScene.children[i].object.userData.textValue);
-//         console.log("text");
-//     }else {
-//         preCreate();
-//         scene.children[i] = new THREE.ObjectLoader().parse(newScene.children[i]);
-//         sceneObjects[sceneCounter] = newScene.children[i];
-//         createLi();
-//         console.log("ntdfs");
-//     }
-// }
-// else{
-//     console.log("1234");
-//     preCreate();
-//     scene.children[i] = new THREE.ObjectLoader().parse(newScene.children[i]);
-//     sceneObjects[sceneCounter] = newScene.children[i];
-//     createLi();
-// }
+
 function initAddButtonListeners() {
     let elements = document.querySelectorAll('.add-button');
     [].forEach.call(elements, function (el) {

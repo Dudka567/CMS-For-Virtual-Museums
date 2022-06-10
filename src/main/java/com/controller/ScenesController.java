@@ -45,6 +45,6 @@ public class ScenesController {
     public String deleteScene(@ModelAttribute Scene scene, Model model) {
         scenesService.deleteScene(scene.getId(), scene.getSettings(), scene.getName(), scene.getTitle());
         model.addAttribute("scenes", scenesService.findAll());
-        return "museum";
+        return "museum-for-admins";
     }
 }

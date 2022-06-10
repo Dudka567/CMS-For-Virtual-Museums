@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns: lang="ru">
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Museum FAST</title>
+    <link rel="stylesheet" href="resources/css/museum-style.css">
+    <script src="resources/js/lib/Draggable.min.js" defer></script>
+    <script src="resources/js/lib/gsap.min.js" defer></script>
+    <script src="resources/js/lib/InertiaPlugin.min.js" defer></script>
+    <script src="resources/js/menu.js" defer></script>
+</head>
+<body>
+<h1 class="header">Museum FAST<span>welcome</span></h1>
+
+<div class="gallery">
+    <div th:each="scene : ${scenes}">
+        <button class="gallery_item">
+            <a th:href="@{/stand(id=${scene.getId()})}">
+                <img th:src="${scene.getTitle()}" alt="Alt">
+            </a>
+            <p th:text="${scene.getName()}" style="font-family: 'Agency FB';font-size: 5px;"></p>
+        </button>
+    </div>
+</div>
+</body>
+</html>

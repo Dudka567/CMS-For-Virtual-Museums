@@ -1,13 +1,15 @@
 <!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns: lang="ru">
+
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Stand1</title>
     <link rel="stylesheet" href="resources/css/stand.css">
     <script src="resources/js/lib/three.js"></script>
-    <script src="resources/js/stand-loader.js" type="module"></script>
+    <script src="resources/js/stand-loaderP.js" type="module"></script>
 </head>
 <body>
-<div id="scene" class="container" datasrc="resources/romeAbak.json"></div>
+<div id="scene" class="container" th:data="${settings}"></div>
 </body>
 </html>

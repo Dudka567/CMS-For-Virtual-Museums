@@ -70,6 +70,33 @@ function loadScene() {
         });
     }
 
+    function clone3DText(userData) {
+        let textValue = userData.textValue;
+        let geometry1;
+        let text;
+        loaderText.load('../resources/helvetiker_regular.typeface.json', function (font) {
+
+            geometry1 = new THREE.TextGeometry(textValue, {
+                font: font,
+                size: 0.1,
+                height: 0.1,
+            });
+
+
+            text = new THREE.Mesh(geometry1, [
+                new THREE.MeshPhongMaterial({color: 0xad4000}),
+                new THREE.MeshPhongMaterial({color: 0x5c2301})
+            ]);
+            text.castShadow = true;
+            text.material[0].color.set(userData.textColor);
+            text.material[1].color.set("#111");
+            text.position.set(userData.textPosition.x, userData.textPosition.y, userData.textPosition.z);
+            text.rotation.set(userData.textRotation._x, userData.textRotation._y+1, userData.textRotation._z,userData.textRotation._order)
+            text.scale.set(userData.textScale.x, userData.textScale.y, userData.textScale.z);
+            scene.add(text);
+        });
+    }
+
     function setDistance(value) {
         controls.minDistance = value;
     }
@@ -84,17 +111,21 @@ function loadScene() {
         }
     }
 
-    function getFileSity(fileName) {
-        let request = new XMLHttpRequest();
-        request.open('GET', fileName, false);
-        request.send(null);
-        return JSON.parse(request.responseText);
+    function getFileSity(settings) {
+        return JSON.parse(settings);
     }
-    let newScene = getFileSity(document.getElementById("scene").getAttribute("datasrc"));
-    scene = new THREE.ObjectLoader().parse(newScene);
-    addBackground(scene.name[0]);
-    addBackground(scene.name[1]);
-    setDistance(scene.name[2]);
-    addSound(scene.name[3]);
+    let newScene = getFileSity(document.getElementById("scene").getAttribute("data"));
+    for (let i = 0; i < newScene.children.length; i++) {
+        scene.children[i] = new THREE.ObjectLoader().parse(newScene.children[i]);
+        if(newScene.children[i].hasOwnProperty("geometries")){
+            if(newScene.children[i].geometries[0].type === "TextGeometry") {
+                clone3DText(newScene.children[i].object.userData);
+            }
+        }
+    }
+    addBackground(newScene.name[0]);
+    addBackground(newScene.name[1]);
+    setDistance(newScene.name[2]);
+    addSound(newScene.name[3]);
 }
 loadScene();

@@ -8,6 +8,8 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.util.List;
+
 @Controller
 public class NavigationController {
     @Autowired
@@ -16,7 +18,15 @@ public class NavigationController {
     @GetMapping("/")
     public String getStart(Model model) {
         model.addAttribute("scenes", scenesService.findAll());
-        return "museum";
+        return "museum-for-admins";
+    }
+
+    @GetMapping("/scenes")
+    public String getUsersPresent(Model model) {
+        List<Scenes> scenes = scenesService.findAll();
+        scenes.remove(0);
+        model.addAttribute("scenes", scenes);
+        return "museum-for-users";
     }
 
     @GetMapping("/cms")
@@ -30,7 +40,9 @@ public class NavigationController {
     }
 
     @GetMapping("/stand")
-    public String getStand() {
+    public String getStand(@RequestParam("id") Long id, Model model) {
+        Scenes scene = scenesService.getByID(id);
+        model.addAttribute("settings", scene.getSettings());
         return "stand";
     }
 
