@@ -453,7 +453,7 @@ function clone3DText(userData) {
         text.material[0].color.set(userData.textColor);
         text.material[1].color.set("#111");
         text.position.set(userData.textPosition.x, userData.textPosition.y, userData.textPosition.z);
-        text.rotation.set(userData.textRotation._x, userData.textRotation._y+1, userData.textRotation._z,userData.textRotation._order)
+        text.rotation.set(userData.textRotation._x, userData.textRotation._y, userData.textRotation._z,userData.textRotation._order)
         text.scale.set(userData.textScale.x, userData.textScale.y, userData.textScale.z);
         preCreate();
         text.name = idObjectName;
@@ -711,7 +711,7 @@ function initSceneActionButtonListeners() {
         sceneSetting[2].value = "5";
         setDistance(sceneSetting[2].value);
         sceneSetting[3].value = "resources/";
-
+        sound.disconnect();
     }
 
     document.getElementById("deleteScene").onclick = function () {
